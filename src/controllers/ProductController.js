@@ -9,8 +9,8 @@ class ProductController extends Database {
         }
         try {
             const result = await this.query(
-            'INSERT INTO products (name, amount, color, voltage, description, category_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-            [name, amount, color, voltage, description, category_id]
+                'INSERT INTO products (name, amount, color, voltage, description, category_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+                [name, amount, color, voltage, description, category_id]
             );
             res.status(201).json(result.rows[0]);
         } catch (error) {
@@ -27,12 +27,30 @@ class ProductController extends Database {
             res.status(500).json({ error: 'Erro ao buscar os produtos' });
         }
     }
-    
-    // Método para buscar um produto por ID
+
+    // Método para buscar um produto usando um ID específico e trazer detalhes
     async getById(req, res) {
         const { id } = req.params;
         try {
-            const result = await this.query('SELECT * FROM products WHERE id = $1', [id]);
+            const result = await this.query(
+                `SELECT 
+                    categories.name AS category_name,
+                    products.name AS product_name,
+                    products.amount,
+                    products.color,
+                    products.voltage,
+                    products.description
+                FROM 
+                    products
+                INNER JOIN 
+                    categories 
+                ON 
+                    products.category_id = categories.id 
+                WHERE 
+                    products.id = $1`, 
+                [id]
+            );
+
             if (result.rows.length === 0) {
                 return res.status(404).json({ error: 'Produto não encontrado' });
             }
@@ -42,8 +60,8 @@ class ProductController extends Database {
         }
     }
 
-     // Método para atualizar um produto
-     async update(req, res) {
+    // Método para atualizar um produto
+    async update(req, res) {
         const { id } = req.params;
         const { name, amount, color, voltage, description, category_id } = req.body;
         try {
